@@ -258,6 +258,14 @@ td b.neg{color:var(--bad)}
 #cdlg{width:min(420px,calc(100vw - 24px))}
 .cmsg{white-space:pre-line;font-size:15px;line-height:1.5}
 button.pri.perigo{background:var(--bad);border-color:var(--bad);color:#fff}
+.pc.inat{border-top-color:var(--neut);background:var(--surf2)}
+.inatbox{border:1px dashed var(--line);border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:8px}
+.livres{border:1px dashed var(--line);border-radius:8px;padding:8px 10px;display:flex;flex-direction:column;gap:5px}
+.lv{display:flex;align-items:center;gap:4px;flex-wrap:wrap;padding:2px 4px;border-radius:6px}
+.lv.sel{background:var(--acc-soft)}
+.lv b{font-size:12px;min-width:74px;font-family:var(--disp)}
+.lvb{padding:3px 8px;font-size:12px;min-height:30px!important;border-radius:6px}
+.lvb.on{background:var(--acc);color:var(--acc-ink);border-color:var(--acc)}
 /* ficha */
 .fcols{display:grid;gap:14px;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);align-items:start}
 @media (max-width:900px){.fcols{grid-template-columns:1fr}}
@@ -388,7 +396,7 @@ async function entrar(senha){
 function sair(){ try{localStorage.removeItem('iane-senha');}catch(e){} D=null; telaSenha(); }
 function iniciar(){
   D.pacientes.forEach(p=>P[p.id]=p);
-  D.sessoes.forEach(s=>{ if(s.acon) P[s.pacienteId]={id:s.pacienteId,nome:s.nome,meet:s.meet,acon:true,duracao:s.duracao}; });
+  D.sessoes.forEach(s=>{ if(s.acon) P[s.pacienteId]={id:s.pacienteId,nome:s.nome,meet:s.meet,acon:true,duracao:s.duracao,fim:fimV(s.hora,s.duracao)}; });
   $('#tabs').hidden=false;
   const g=new Date(D.geradoEm);
   $('#sync').textContent=`Atualizado ${pad(g.getDate())}/${pad(g.getMonth()+1)} ${pad(g.getHours())}:${pad(g.getMinutes())}`;
@@ -397,6 +405,7 @@ function iniciar(){
 
 /* ---------- dados ---------- */
 const nomeP=id=>P[id]?.nome||'';
+const fimV=(hora,dur)=>{ const [a,b]=(hora||'00:00').split(':').map(Number); const t=a*60+b+(+dur||90); return pad(Math.floor(t/60)%24)+':'+pad(t%60); };
 const durV=m=>{ m=+m||90; const h=Math.floor(m/60), r=m%60; return (h?h+'h':'')+(r?pad(r):'')+(h?'':'min'); };
 const sessoesDoDia=iso=>D.sessoes.filter(s=>s.data===iso).sort(cmpS);
 function previstas(ini,fim){
@@ -423,7 +432,7 @@ function linhasDia(iso){
 function textoDia(iso){
   const rows=linhasDia(iso); const head=`*${DIAS_L[weekdayOf(iso)]}, ${fmtD(iso)}*`;
   if(!rows.length) return head+'\nSem atendimentos';
-  return head+'\n'+rows.map(r=>{const x=r.s||r.prev; if(!x)return r.hora; const p=P[x.pacienteId]||{}; return `${r.hora}  ${p.nome||''}${p.acon?' (aconselhamento, '+durV(p.duracao)+')':''}${p.meet?'  '+p.meet:''}`;}).join('\n');
+  return head+'\n'+rows.map(r=>{const x=r.s||r.prev; if(!x)return r.hora; const p=P[x.pacienteId]||{}; return `${r.hora}  ${p.nome||''}${p.acon?' (aconselhamento, até '+p.fim+')':''}${p.meet?'  '+p.meet:''}`;}).join('\n');
 }
 function copiaDireta(txt){
   // método síncrono, dentro do clique; funciona mesmo quando a API moderna está bloqueada
