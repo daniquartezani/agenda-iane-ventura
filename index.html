@@ -255,6 +255,9 @@ button.copy.ok{background:var(--ok);color:#fff;border-color:var(--ok)}
 .cell .mini.ghost{background:transparent;color:var(--mut);border:1px dashed var(--line);border-left:2px dashed var(--neut)}
 .srow.ghost{--st:var(--neut);border-style:dashed;background:transparent}
 td b.neg{color:var(--bad)}
+#cdlg{width:min(420px,calc(100vw - 24px))}
+.cmsg{white-space:pre-line;font-size:15px;line-height:1.5}
+button.pri.perigo{background:var(--bad);border-color:var(--bad);color:#fff}
 /* ficha */
 .fcols{display:grid;gap:14px;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);align-items:start}
 @media (max-width:900px){.fcols{grid-template-columns:1fr}}
@@ -385,6 +388,7 @@ async function entrar(senha){
 function sair(){ try{localStorage.removeItem('iane-senha');}catch(e){} D=null; telaSenha(); }
 function iniciar(){
   D.pacientes.forEach(p=>P[p.id]=p);
+  D.sessoes.forEach(s=>{ if(s.acon) P[s.pacienteId]={id:s.pacienteId,nome:s.nome,meet:s.meet,acon:true,duracao:s.duracao}; });
   $('#tabs').hidden=false;
   const g=new Date(D.geradoEm);
   $('#sync').textContent=`Atualizado ${pad(g.getDate())}/${pad(g.getMonth()+1)} ${pad(g.getHours())}:${pad(g.getMinutes())}`;
@@ -393,6 +397,7 @@ function iniciar(){
 
 /* ---------- dados ---------- */
 const nomeP=id=>P[id]?.nome||'';
+const durV=m=>{ m=+m||90; const h=Math.floor(m/60), r=m%60; return (h?h+'h':'')+(r?pad(r):'')+(h?'':'min'); };
 const sessoesDoDia=iso=>D.sessoes.filter(s=>s.data===iso).sort(cmpS);
 function previstas(ini,fim){
   const today=todayISO(), out=[], ocupadas=new Set();
@@ -418,13 +423,27 @@ function linhasDia(iso){
 function textoDia(iso){
   const rows=linhasDia(iso); const head=`*${DIAS_L[weekdayOf(iso)]}, ${fmtD(iso)}*`;
   if(!rows.length) return head+'\nSem atendimentos';
-  return head+'\n'+rows.map(r=>{const x=r.s||r.prev; if(!x)return r.hora; const p=P[x.pacienteId]||{}; return `${r.hora}  ${p.nome||''}${p.meet?'  '+p.meet:''}`;}).join('\n');
+  return head+'\n'+rows.map(r=>{const x=r.s||r.prev; if(!x)return r.hora; const p=P[x.pacienteId]||{}; return `${r.hora}  ${p.nome||''}${p.acon?' (aconselhamento, '+durV(p.duracao)+')':''}${p.meet?'  '+p.meet:''}`;}).join('\n');
+}
+function copiaDireta(txt){
+  // método síncrono, dentro do clique; funciona mesmo quando a API moderna está bloqueada
+  try{
+    const host=(typeof dlg!=='undefined'&&dlg&&dlg.open)?dlg:document.body;
+    const ta=document.createElement('textarea'); ta.value=txt; ta.setAttribute('readonly','');
+    ta.style.cssText='position:fixed;top:0;left:0;width:2px;height:2px;padding:0;border:0;opacity:.01;font-size:16px';
+    host.appendChild(ta); ta.focus({preventScroll:true}); ta.select(); ta.setSelectionRange(0,txt.length);
+    const ok=document.execCommand('copy'); ta.remove(); return ok;
+  }catch(e){ return false; }
+}
+function copiaModerna(txt){
+  if(!navigator.clipboard||!navigator.clipboard.writeText) return Promise.resolve(false);
+  return Promise.race([navigator.clipboard.writeText(txt).then(()=>true,()=>false), new Promise(r=>setTimeout(()=>r(false),700))]);
 }
 async function copiar(txt,btn){
-  let ok=false; try{await navigator.clipboard.writeText(txt);ok=true;}catch(e){}
-  if(!ok){try{const ta=document.createElement('textarea');ta.value=txt;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();ok=document.execCommand('copy');ta.remove();}catch(e){}}
+  let ok=copiaDireta(txt);
+  if(!ok) ok=await copiaModerna(txt);
   if(ok&&btn){const o=btn.textContent;btn.textContent='✓ Copiado';btn.classList.add('ok');setTimeout(()=>{btn.textContent=o;btn.classList.remove('ok');},1600);}
-  toast(ok?'Copiado':'Não foi possível copiar');
+  if(ok) toast('Copiado'); else { const w=document.createElement('div'); w.className='card'; w.style.cssText='position:fixed;inset:12px;z-index:30;display:flex;flex-direction:column;gap:8px;overflow:auto'; w.innerHTML='<b>Selecione e copie o texto</b><textarea style="flex:1;min-height:240px"></textarea><button class="pri">Fechar</button>'; w.querySelector('textarea').value=txt; w.querySelector('button').onclick=()=>w.remove(); document.body.appendChild(w); w.querySelector('textarea').select(); }
 }
 function copiarDia(iso,btn){copiar(textoDia(iso),btn);}
 function copiarSemana(mon,btn){copiar([0,1,2,3,4].map(i=>textoDia(addDays(mon,i))).join('\n\n'),btn);}
@@ -436,7 +455,7 @@ function cardDia(iso,grande){
     <div class="wa-lines">${rows.length?rows.map(r=>{
       const x=r.s||r.prev; if(!x) return `<div class="wl vago"><span class="h">${r.hora}</span><span class="n">—</span></div>`;
       const p=P[x.pacienteId]||{};
-      return `<div class="wl ${r.s?'st-'+r.s.status:'prev'}"><span class="h">${esc(r.hora)}</span><span class="n"><b>${esc(p.nome||'')}</b>${r.s&&r.s.idx?`<span class="num">${r.s.idx}/${r.s.N}</span>`:''}${r.s&&r.s.status!=='agendada'?`<span class="stpill">${STATUS[r.s.status]}</span>`:''}${r.s&&r.s.status==='agendada'&&r.s.confirmacao==='confirmado'?'<span class="pill ok">✓ confirmado</span>':''}${p.frequencia==='quinzenal'?'<span class="pill neut">quinzenal</span>':''}</span>${p.meet?`<a class="lk" href="${esc(p.meet)}" target="_blank" rel="noopener">${esc(p.meet.replace(/^https?:\/\//,''))}</a>`:'<span class="lk muted">sem link</span>'}</div>`;}).join(''):'<p class="muted small" style="padding:6px 2px">Sem atendimentos</p>'}</div></div>`;
+      return `<div class="wl ${r.s?'st-'+r.s.status:'prev'}"><span class="h">${esc(r.hora)}</span><span class="n"><b>${esc(p.nome||'')}</b>${p.acon?`<span class="pill acc">Aconselhamento · ${durV(p.duracao)}</span>`:''}${r.s&&r.s.idx?`<span class="num">${r.s.idx}/${r.s.N}</span>`:''}${r.s&&r.s.status!=='agendada'?`<span class="stpill">${STATUS[r.s.status]}</span>`:''}${r.s&&r.s.status==='agendada'&&r.s.confirmacao==='confirmado'?'<span class="pill ok">✓ confirmado</span>':''}${p.frequencia==='quinzenal'?'<span class="pill neut">quinzenal</span>':''}</span>${p.meet?`<a class="lk" href="${esc(p.meet)}" target="_blank" rel="noopener">${esc(p.meet.replace(/^https?:\/\//,''))}</a>`:'<span class="lk muted">sem link</span>'}</div>`;}).join(''):'<p class="muted small" style="padding:6px 2px">Sem atendimentos</p>'}</div></div>`;
 }
 function vHoje(){
   const today=todayISO(), mon=addDays(mondayOf(today),7*UI.semHoje);
