@@ -263,6 +263,21 @@ td b.neg{color:var(--bad)}
 .namebtn:hover{color:var(--acc);text-decoration:underline}
 td .namebtn{font-size:14px}
 select.stsel{width:auto;padding:3px 6px;font-size:13px;border-color:var(--st);color:var(--st);background:var(--st-soft);font-weight:600}
+/* confirmação */
+.conf{display:flex;flex-direction:column;gap:6px}
+.crow{display:grid;grid-template-columns:56px minmax(0,1fr) auto;gap:10px;align-items:center;background:var(--surf);border:1px solid var(--line);border-left:4px solid var(--neut);border-radius:8px;padding:9px 12px}
+.crow.c-ok{border-left-color:var(--ok)}.crow.c-warn{border-left-color:var(--warn)}.crow.c-bad{border-left-color:var(--bad)}
+.crow .ch{font-family:var(--disp);font-weight:600;font-size:16px}
+.crow .cn{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.crow .cn b{font-size:15px}
+.crow .cn div{flex-basis:100%}
+.crow .ca{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end;align-items:center}
+.wabtn{display:inline-flex;align-items:center;background:#1FA855;color:#fff;border-radius:8px;padding:6px 12px;font-weight:600;font-size:13px;text-decoration:none}
+.wabtn:hover{filter:brightness(1.06)}
+button.sel.ok{background:var(--ok);color:#fff;border-color:var(--ok)}
+button.sel.warn{background:var(--warn);color:#fff;border-color:var(--warn)}
+button.sel.bad{background:var(--bad);color:#fff;border-color:var(--bad)}
+@media (max-width:700px){.crow{grid-template-columns:52px minmax(0,1fr)}.crow .ca{grid-column:1/-1;justify-content:flex-start}.wabtn{min-height:36px}}
 /* potenciais */
 .leads{display:flex;flex-direction:column;gap:8px}
 .lead{border:1px solid var(--line);border-radius:8px;padding:9px 10px;display:flex;flex-direction:column;gap:4px;background:var(--surf)}
@@ -421,7 +436,7 @@ function cardDia(iso,grande){
     <div class="wa-lines">${rows.length?rows.map(r=>{
       const x=r.s||r.prev; if(!x) return `<div class="wl vago"><span class="h">${r.hora}</span><span class="n">—</span></div>`;
       const p=P[x.pacienteId]||{};
-      return `<div class="wl ${r.s?'st-'+r.s.status:'prev'}"><span class="h">${esc(r.hora)}</span><span class="n"><b>${esc(p.nome||'')}</b>${r.s&&r.s.idx?`<span class="num">${r.s.idx}/${r.s.N}</span>`:''}${r.s&&r.s.status!=='agendada'?`<span class="stpill">${STATUS[r.s.status]}</span>`:''}${p.frequencia==='quinzenal'?'<span class="pill neut">quinzenal</span>':''}</span>${p.meet?`<a class="lk" href="${esc(p.meet)}" target="_blank" rel="noopener">${esc(p.meet.replace(/^https?:\/\//,''))}</a>`:'<span class="lk muted">sem link</span>'}</div>`;}).join(''):'<p class="muted small" style="padding:6px 2px">Sem atendimentos</p>'}</div></div>`;
+      return `<div class="wl ${r.s?'st-'+r.s.status:'prev'}"><span class="h">${esc(r.hora)}</span><span class="n"><b>${esc(p.nome||'')}</b>${r.s&&r.s.idx?`<span class="num">${r.s.idx}/${r.s.N}</span>`:''}${r.s&&r.s.status!=='agendada'?`<span class="stpill">${STATUS[r.s.status]}</span>`:''}${r.s&&r.s.status==='agendada'&&r.s.confirmacao==='confirmado'?'<span class="pill ok">✓ confirmado</span>':''}${p.frequencia==='quinzenal'?'<span class="pill neut">quinzenal</span>':''}</span>${p.meet?`<a class="lk" href="${esc(p.meet)}" target="_blank" rel="noopener">${esc(p.meet.replace(/^https?:\/\//,''))}</a>`:'<span class="lk muted">sem link</span>'}</div>`;}).join(''):'<p class="muted small" style="padding:6px 2px">Sem atendimentos</p>'}</div></div>`;
 }
 function vHoje(){
   const today=todayISO(), mon=addDays(mondayOf(today),7*UI.semHoje);
