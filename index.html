@@ -266,6 +266,14 @@ button.pri.perigo{background:var(--bad);border-color:var(--bad);color:#fff}
 .lv b{font-size:12px;min-width:74px;font-family:var(--disp)}
 .lvb{padding:3px 8px;font-size:12px;min-height:30px!important;border-radius:6px}
 .lvb.on{background:var(--acc);color:var(--acc-ink);border-color:var(--acc)}
+.wl.blk{background:repeating-linear-gradient(135deg,var(--surf2) 0 8px,transparent 8px 16px);border-radius:6px}
+.wl.blk .n b,.chip.blk .n b,.srow.blk b{color:var(--bad)}
+.wl .blkbtn{opacity:0;font-size:12px;padding:2px 8px;min-height:0!important}
+.wl.vago:hover .blkbtn,.wl.vago:focus-within .blkbtn{opacity:1}
+@media (hover:none){.wl .blkbtn{opacity:.7}}
+.chip.blk{--st:var(--bad);--st-soft:var(--bad-soft);background:repeating-linear-gradient(135deg,var(--bad-soft) 0 6px,var(--surf) 6px 12px)}
+.srow.blk{--st:var(--bad);background:repeating-linear-gradient(135deg,var(--surf2) 0 8px,transparent 8px 16px)}
+.cell .mini.blk{background:var(--bad-soft);color:var(--bad);border-left:2px solid var(--bad)}
 /* ficha */
 .fcols{display:grid;gap:14px;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);align-items:start}
 @media (max-width:900px){.fcols{grid-template-columns:1fr}}
@@ -396,7 +404,7 @@ async function entrar(senha){
 function sair(){ try{localStorage.removeItem('iane-senha');}catch(e){} D=null; telaSenha(); }
 function iniciar(){
   D.pacientes.forEach(p=>P[p.id]=p);
-  D.sessoes.forEach(s=>{ if(s.acon) P[s.pacienteId]={id:s.pacienteId,nome:s.nome,meet:s.meet,acon:true,duracao:s.duracao,fim:fimV(s.hora,s.duracao)}; });
+  D.sessoes.forEach(s=>{ if(s.blk) P[s.pacienteId]={id:s.pacienteId,nome:s.titulo||'Compromisso',blk:true}; if(s.acon) P[s.pacienteId]={id:s.pacienteId,nome:s.nome,meet:s.meet,acon:true,duracao:s.duracao,fim:fimV(s.hora,s.duracao)}; });
   $('#tabs').hidden=false;
   const g=new Date(D.geradoEm);
   $('#sync').textContent=`Atualizado ${pad(g.getDate())}/${pad(g.getMonth()+1)} ${pad(g.getHours())}:${pad(g.getMinutes())}`;
@@ -405,16 +413,19 @@ function iniciar(){
 
 /* ---------- dados ---------- */
 const nomeP=id=>P[id]?.nome||'';
+const minV=h=>{const [a,b]=(h||'0:0').split(':').map(Number);return a*60+b;};
+const stEfV=s=>{ if(!s||s.status!=='agendada'||s.blk) return s?s.status:''; const t=todayISO(); if(s.data<t) return 'realizada'; if(s.data>t) return 'agendada'; const d=new Date(); return (d.getHours()*60+d.getMinutes())>=minV(s.hora)+(s.acon?(+s.duracao||90):60)?'realizada':'agendada'; };
 const fimV=(hora,dur)=>{ const [a,b]=(hora||'00:00').split(':').map(Number); const t=a*60+b+(+dur||90); return pad(Math.floor(t/60)%24)+':'+pad(t%60); };
 const durV=m=>{ m=+m||90; const h=Math.floor(m/60), r=m%60; return (h?h+'h':'')+(r?pad(r):'')+(h?'':'min'); };
 const sessoesDoDia=iso=>D.sessoes.filter(s=>s.data===iso).sort(cmpS);
 function previstas(ini,fim){
   const today=todayISO(), out=[], ocupadas=new Set();
-  D.sessoes.forEach(x=>ocupadas.add(x.pacienteId+'|'+mondayOf(x.data)));
+  D.sessoes.forEach(x=>{ if(!x.blk) ocupadas.add(x.pacienteId+'|'+mondayOf(x.data)); });
+  const bloq=new Set(D.sessoes.filter(x=>x.blk&&x.diaInteiro).map(x=>x.data));
   for(const p of D.pacientes.filter(p=>p.ativo!==false&&p.diaSemana!=null&&p.hora)){
     let ref=p.referencia||p.ultima||null;
     for(let d=ini;d<=fim;d=addDays(d,1)){
-      if(d<today||weekdayOf(d)!==+p.diaSemana)continue;
+      if(d<today||weekdayOf(d)!==+p.diaSemana||bloq.has(d))continue;
       if(p.frequencia==='quinzenal'){ if(!ref)ref=d; const w=Math.round((fromISO(mondayOf(d))-fromISO(mondayOf(ref)))/(7*864e5)); if(w%2!==0)continue; }
       const k=p.id+'|'+mondayOf(d); if(ocupadas.has(k))continue; ocupadas.add(k);
       out.push({pacienteId:p.id,data:d,hora:p.hora});
@@ -423,7 +434,7 @@ function previstas(ini,fim){
   return out.sort(cmpS);
 }
 function linhasDia(iso){
-  const rows=sessoesDoDia(iso).filter(s=>s.status!=='cancelada'&&s.status!=='remarcada').map(s=>({hora:s.hora,s}));
+  const rows=sessoesDoDia(iso).filter(s=>s.status!=='cancelada'&&s.status!=='remarcada').map(s=>({hora:s.blk&&s.diaInteiro?'00:00':s.hora,s}));
   previstas(iso,iso).forEach(x=>rows.push({hora:x.hora,prev:x}));
   rows.sort((a,b)=>a.hora.localeCompare(b.hora));
   if(UI.vagos&&rows.length){ const h0=+rows[0].hora.slice(0,2),h1=+rows[rows.length-1].hora.slice(0,2); for(let h=h0;h<=h1;h++){ if(!rows.some(r=>+r.hora.slice(0,2)===h)) rows.push({hora:pad(h)+':00'}); } rows.sort((a,b)=>a.hora.localeCompare(b.hora)); }
@@ -432,7 +443,7 @@ function linhasDia(iso){
 function textoDia(iso){
   const rows=linhasDia(iso); const head=`*${DIAS_L[weekdayOf(iso)]}, ${fmtD(iso)}*`;
   if(!rows.length) return head+'\nSem atendimentos';
-  return head+'\n'+rows.map(r=>{const x=r.s||r.prev; if(!x)return r.hora; const p=P[x.pacienteId]||{}; return `${r.hora}  ${p.nome||''}${p.acon?' (aconselhamento, até '+p.fim+')':''}${p.meet?'  '+p.meet:''}`;}).join('\n');
+  return head+'\n'+rows.map(r=>{const x=r.s||r.prev; if(!x)return r.hora; const p=P[x.pacienteId]||{}; if(r.s&&r.s.blk) return r.s.diaInteiro?`⛔ Dia bloqueado: ${r.s.titulo||''}`:`${r.hora}  ⛔ ${r.s.titulo||'Compromisso'} (até ${fimV(r.s.hora,r.s.duracao)})`; return `${r.hora}  ${p.nome||''}${p.acon?' (aconselhamento, até '+p.fim+')':''}${p.meet?'  '+p.meet:''}`;}).join('\n');
 }
 function copiaDireta(txt){
   // método síncrono, dentro do clique; funciona mesmo quando a API moderna está bloqueada
@@ -462,9 +473,9 @@ function cardDia(iso,grande){
   const rows=linhasDia(iso), n=rows.filter(r=>r.s||r.prev).length;
   return `<div class="wa ${iso===todayISO()?'today':''} ${grande?'big':''}"><header><div><b>${DIAS_L[weekdayOf(iso)]}</b><small>${fmtD(iso)} · ${n} atendimento${n===1?'':'s'}</small></div><button class="sm copy" onclick="copiarDia('${iso}',this)">Copiar</button></header>
     <div class="wa-lines">${rows.length?rows.map(r=>{
-      const x=r.s||r.prev; if(!x) return `<div class="wl vago"><span class="h">${r.hora}</span><span class="n">—</span></div>`;
+      if(r.s&&r.s.blk) return `<div class="wl blk"><span class="h">${r.s.diaInteiro?'dia':esc(r.hora)}</span><span class="n"><b>⛔ ${esc(r.s.diaInteiro?'Dia bloqueado: '+(r.s.titulo||''):(r.s.titulo||'Compromisso')+' (até '+fimV(r.s.hora,r.s.duracao)+')')}</b></span></div>`; const x=r.s||r.prev; if(!x) return `<div class="wl vago"><span class="h">${r.hora}</span><span class="n">—</span></div>`;
       const p=P[x.pacienteId]||{};
-      return `<div class="wl ${r.s?'st-'+r.s.status:'prev'}"><span class="h">${esc(r.hora)}</span><span class="n"><b>${esc(p.nome||'')}</b>${p.acon?`<span class="pill acc">Aconselhamento · ${durV(p.duracao)}</span>`:''}${r.s&&r.s.idx?`<span class="num">${r.s.idx}/${r.s.N}</span>`:''}${r.s&&r.s.status!=='agendada'?`<span class="stpill">${STATUS[r.s.status]}</span>`:''}${r.s&&r.s.status==='agendada'&&r.s.confirmacao==='confirmado'?'<span class="pill ok">✓ confirmado</span>':''}${p.frequencia==='quinzenal'?'<span class="pill neut">quinzenal</span>':''}</span>${p.meet?`<a class="lk" href="${esc(p.meet)}" target="_blank" rel="noopener">${esc(p.meet.replace(/^https?:\/\//,''))}</a>`:'<span class="lk muted">sem link</span>'}</div>`;}).join(''):'<p class="muted small" style="padding:6px 2px">Sem atendimentos</p>'}</div></div>`;
+      return `<div class="wl ${r.s?'st-'+stEfV(r.s):'prev'}"><span class="h">${esc(r.hora)}</span><span class="n"><b>${esc(p.nome||'')}</b>${p.acon?`<span class="pill acc">Aconselhamento · ${durV(p.duracao)}</span>`:''}${r.s&&r.s.idx?`<span class="num">${r.s.idx}/${r.s.N}</span>`:''}${r.s&&stEfV(r.s)!=='agendada'?`<span class="stpill">${STATUS[stEfV(r.s)]}</span>`:''}${r.s&&stEfV(r.s)==='agendada'&&r.s.confirmacao==='confirmado'?'<span class="pill ok">✓ confirmado</span>':''}${p.frequencia==='quinzenal'?'<span class="pill neut">quinzenal</span>':''}</span>${p.meet?`<a class="lk" href="${esc(p.meet)}" target="_blank" rel="noopener">${esc(p.meet.replace(/^https?:\/\//,''))}</a>`:'<span class="lk muted">sem link</span>'}</div>`;}).join(''):'<p class="muted small" style="padding:6px 2px">Sem atendimentos</p>'}</div></div>`;
 }
 function vHoje(){
   const today=todayISO(), mon=addDays(mondayOf(today),7*UI.semHoje);
@@ -485,7 +496,7 @@ function vMes(){
     <div class="cal"><div class="cal-head"><div>Seg</div><div>Ter</div><div>Qua</div><div>Qui</div><div>Sex</div><div>Sáb</div><div>Dom</div></div><div class="cal-grid">${cells.map(d=>{
       const ss=sessoesDoDia(d).filter(s=>s.status!=='cancelada'&&s.status!=='remarcada'), pv=prevDia[d]||[], tot=ss.length+pv.length;
       return `<div class="cell ${d.startsWith(UI.mes)?'':'out'} ${d===today?'today':''} ${d===dia?'sel':''}" onclick="UI.dia='${d}';render();document.getElementById('daypanel')?.scrollIntoView({behavior:'smooth',block:'nearest'})"><span class="d">${+d.slice(8)}</span>
-        ${ss.slice(0,4).map(s=>`<span class="mini st-${s.status}">${esc(s.hora)} ${esc(nomeP(s.pacienteId).split(' ')[0])}</span>`).join('')}${ss.length<4?pv.slice(0,4-ss.length).map(x=>`<span class="mini ghost">${esc(x.hora)} ${esc(nomeP(x.pacienteId).split(' ')[0])}</span>`).join(''):''}
+        ${ss.slice(0,4).map(s=>s.blk?`<span class="mini blk">⛔ ${esc(s.diaInteiro?(s.titulo||'bloqueado'):s.hora+' '+(s.titulo||''))}</span>`:`<span class="mini st-${s.status}">${esc(s.hora)} ${esc(nomeP(s.pacienteId).split(' ')[0])}</span>`).join('')}${ss.length<4?pv.slice(0,4-ss.length).map(x=>`<span class="mini ghost">${esc(x.hora)} ${esc(nomeP(x.pacienteId).split(' ')[0])}</span>`).join(''):''}
         ${tot>4?`<span class="more">+${tot-4}</span>`:''}${tot?`<span class="cnt">${tot}</span>`:''}</div>`;}).join('')}</div></div>
     ${dia?`<div class="daypanel" id="daypanel">${cardDia(dia,true)}</div>`:''}`;
 }
