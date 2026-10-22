@@ -5,20 +5,20 @@
 :root{
   --bg:#E3ECE8;--surf:#FFFFFF;--surf2:#EDF3F0;--hdr:#155A60;--hdr2:#2B8C7C;--hdr-ink:#F2FAF8;--hdr-mut:#B7DAD4;--glow1:#CBE3DC;--glow2:#D6E4EE;--ink:#16211F;--mut:#5E6E6A;--line:#D5DEDB;
   --acc:#1E6E76;--acc-ink:#FFFFFF;--acc-soft:#DCEDEE;
-  --ok:#2C7A5B;--ok-soft:#DCEFE5;--warn:#9E6212;--warn-soft:#FBEBCF;--bad:#B4432F;--bad-soft:#F8DDD7;--info:#4B5FA8;--info-soft:#E1E5F5;--neut:#6B7A76;--neut-soft:#E6ECEA;
+  --ok:#2C7A5B;--ok-soft:#DCEFE5;--warn:#9E6212;--warn-soft:#FBEBCF;--bad:#B4432F;--bad-soft:#F8DDD7;--info:#4B5FA8;--info-soft:#E1E5F5;--neut:#6B7A76;--neut-soft:#E6ECEA;--q:#7A4CA5;--q-soft:#EFE6F8;
   --shadow:0 1px 2px rgba(22,33,31,.06),0 6px 20px rgba(22,33,31,.06);
   --r:10px;--font:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;--disp:"Sora","IBM Plex Sans",system-ui,sans-serif;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
   --bg:#0E1615;--surf:#172120;--surf2:#1E2A28;--hdr:#0F3538;--hdr2:#17564F;--hdr-ink:#EAF4F2;--hdr-mut:#8FC2BB;--glow1:#14302C;--glow2:#12232B;--ink:#E6ECEA;--mut:#96A5A1;--line:#2B3836;
   --acc:#5FB6BD;--acc-ink:#0F1716;--acc-soft:#1A3538;
-  --ok:#6CC59B;--ok-soft:#173629;--warn:#E5B35C;--warn-soft:#3B2C10;--bad:#F08B78;--bad-soft:#42201A;--info:#9DAEEE;--info-soft:#232B4A;--neut:#9AA9A5;--neut-soft:#243130;
+  --ok:#6CC59B;--ok-soft:#173629;--warn:#E5B35C;--warn-soft:#3B2C10;--bad:#F08B78;--bad-soft:#42201A;--info:#9DAEEE;--info-soft:#232B4A;--neut:#9AA9A5;--neut-soft:#243130;--q:#CBA9EC;--q-soft:#2F2142;
   --shadow:0 1px 2px rgba(0,0,0,.4),0 6px 20px rgba(0,0,0,.35);
 }}
 :root[data-theme="dark"]{
   --bg:#0E1615;--surf:#172120;--surf2:#1E2A28;--hdr:#0F3538;--hdr2:#17564F;--hdr-ink:#EAF4F2;--hdr-mut:#8FC2BB;--glow1:#14302C;--glow2:#12232B;--ink:#E6ECEA;--mut:#96A5A1;--line:#2B3836;
   --acc:#5FB6BD;--acc-ink:#0F1716;--acc-soft:#1A3538;
-  --ok:#6CC59B;--ok-soft:#173629;--warn:#E5B35C;--warn-soft:#3B2C10;--bad:#F08B78;--bad-soft:#42201A;--info:#9DAEEE;--info-soft:#232B4A;--neut:#9AA9A5;--neut-soft:#243130;
+  --ok:#6CC59B;--ok-soft:#173629;--warn:#E5B35C;--warn-soft:#3B2C10;--bad:#F08B78;--bad-soft:#42201A;--info:#9DAEEE;--info-soft:#232B4A;--neut:#9AA9A5;--neut-soft:#243130;--q:#CBA9EC;--q-soft:#2F2142;
   --shadow:0 1px 2px rgba(0,0,0,.4),0 6px 20px rgba(0,0,0,.35);
 }
 *{box-sizing:border-box}
@@ -226,7 +226,14 @@ table.fixa .livre{font-size:11px;color:var(--mut);opacity:.7;padding-left:4px}
 table.fixa .fx{display:block;width:100%;text-align:left;background:var(--info-soft);border:0;border-left:3px solid var(--info);border-radius:6px;padding:5px 7px;font-size:13px;margin-bottom:3px}
 table.fixa .fx b{display:block;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 table.fixa .fx span{font-size:11px;color:var(--mut)}
-table.fixa .fx.q{background:var(--warn-soft);border-left-color:var(--warn)}
+table.fixa .fx.q{background:var(--q-soft);border-left-color:var(--q)}
+/* pacientes quinzenais: fundo lilás + marca (quinz); a cor do status continua na hora/borda */
+.qz{font-size:11px;font-weight:700;color:var(--q);background:var(--q-soft);padding:1px 6px;border-radius:99px;white-space:nowrap}
+.wl.q{background:var(--q-soft);border-radius:6px;padding-left:6px;padding-right:6px}
+.chip.q{background:var(--q-soft)}
+.cell .mini.q,.mini.q{background:var(--q-soft);color:var(--q)}
+.srow.q{background:var(--q-soft)}
+.wa.today .wl.q,.wa.big .wl.q{box-shadow:inset 0 0 0 1px var(--q)}
 /* painel copiar e colar */
 .wa{background:var(--surf);border:1px solid var(--line);border-radius:var(--r);display:flex;flex-direction:column;overflow:hidden}
 .wa header{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:9px 12px;background:var(--acc-soft);color:var(--acc)}
@@ -416,6 +423,7 @@ function iniciar(){
 
 /* ---------- dados ---------- */
 const nomeP=id=>P[id]?.nome||'';
+const ehQ=p=>!!(p&&p.frequencia==='quinzenal'); const qc=p=>ehQ(p)?' q':''; const qz=p=>ehQ(p)?'<span class="qz">(quinz)</span>':''; const qt=p=>ehQ(p)?' (quinz)':'';
 const minV=h=>{const [a,b]=(h||'0:0').split(':').map(Number);return a*60+b;};
 const stEfV=s=>{ if(!s||s.status!=='agendada'||s.blk) return s?s.status:''; const t=todayISO(); if(s.data<t) return 'realizada'; if(s.data>t) return 'agendada'; const d=new Date(); return (d.getHours()*60+d.getMinutes())>=minV(s.hora)+(s.acon?(+s.duracao||90):60)?'realizada':'agendada'; };
 const fimV=(hora,dur)=>{ const [a,b]=(hora||'00:00').split(':').map(Number); const t=a*60+b+(+dur||90); return pad(Math.floor(t/60)%24)+':'+pad(t%60); };
@@ -446,7 +454,7 @@ function linhasDia(iso){
 function textoDia(iso){
   const rows=linhasDia(iso); const head=`*${DIAS_L[weekdayOf(iso)]}, ${fmtD(iso)}*`;
   if(!rows.length) return head+'\nSem atendimentos';
-  return head+'\n'+rows.map(r=>{const x=r.s||r.prev; if(!x)return r.hora; const p=P[x.pacienteId]||{}; if(r.s&&r.s.blk) return r.s.diaInteiro?`⛔ Dia bloqueado: ${r.s.titulo||''}`:`${r.hora}  ⛔ ${r.s.titulo||'Compromisso'} (até ${fimV(r.s.hora,r.s.duracao)})`; return `${r.hora}  ${p.nome||''}${p.acon?' (aconselhamento, até '+p.fim+')':''}${p.meet?'  '+p.meet:''}`;}).join('\n');
+  return head+'\n'+rows.map(r=>{const x=r.s||r.prev; if(!x)return r.hora; const p=P[x.pacienteId]||{}; if(r.s&&r.s.blk) return r.s.diaInteiro?`⛔ Dia bloqueado: ${r.s.titulo||''}`:`${r.hora}  ⛔ ${r.s.titulo||'Compromisso'} (até ${fimV(r.s.hora,r.s.duracao)})`; return `${r.hora}  ${p.nome||''}${qt(p)}${p.acon?' (aconselhamento, até '+p.fim+')':''}${p.meet?'  '+p.meet:''}`;}).join('\n');
 }
 function copiaDireta(txt){
   // método síncrono, dentro do clique; funciona mesmo quando a API moderna está bloqueada
@@ -478,7 +486,7 @@ function cardDia(iso,grande){
     <div class="wa-lines">${rows.length?rows.map(r=>{
       if(r.s&&r.s.blk) return `<div class="wl blk"><span class="h">${r.s.diaInteiro?'dia':esc(r.hora)}</span><span class="n"><b>⛔ ${esc(r.s.diaInteiro?'Dia bloqueado: '+(r.s.titulo||''):(r.s.titulo||'Compromisso')+' (até '+fimV(r.s.hora,r.s.duracao)+')')}</b></span></div>`; const x=r.s||r.prev; if(!x) return `<div class="wl vago"><span class="h">${r.hora}</span><span class="n">—</span></div>`;
       const p=P[x.pacienteId]||{};
-      return `<div class="wl ${r.s?'st-'+stEfV(r.s):'fixo'}"><span class="h">${esc(r.hora)}</span><span class="n"><b>${esc(p.nome||'')}</b>${p.acon?`<span class="pill acc">Aconselhamento · ${durV(p.duracao)}</span>`:''}${r.s&&r.s.idx?`<span class="num">${r.s.idx}/${r.s.N}</span>`:''}${r.s&&stEfV(r.s)!=='agendada'?`<span class="stpill">${STATUS[stEfV(r.s)]}</span>`:''}${r.s&&stEfV(r.s)==='agendada'&&r.s.confirmacao==='confirmado'?'<span class="pill ok">✓ confirmado</span>':''}${r.prev?`<span class="pill neut">fixo${p.frequencia==='quinzenal'?' · quinzenal':''}</span>`:(p.frequencia==='quinzenal'?'<span class="pill neut">quinzenal</span>':'')}</span>${p.meet?`<a class="lk" href="${esc(p.meet)}" target="_blank" rel="noopener">${esc(p.meet.replace(/^https?:\/\//,''))}</a>`:'<span class="lk muted">sem link</span>'}</div>`;}).join(''):'<p class="muted small" style="padding:6px 2px">Sem atendimentos</p>'}</div></div>`;
+      return `<div class="wl ${r.s?'st-'+stEfV(r.s):'fixo'}${qc(p)}"><span class="h">${esc(r.hora)}</span><span class="n"><b>${esc(p.nome||'')}</b>${qz(p)}${p.acon?`<span class="pill acc">Aconselhamento · ${durV(p.duracao)}</span>`:''}${r.s&&r.s.idx?`<span class="num">${r.s.idx}/${r.s.N}</span>`:''}${r.s&&stEfV(r.s)!=='agendada'?`<span class="stpill">${STATUS[stEfV(r.s)]}</span>`:''}${r.s&&stEfV(r.s)==='agendada'&&r.s.confirmacao==='confirmado'?'<span class="pill ok">✓ confirmado</span>':''}${r.prev?'<span class="pill neut">fixo</span>':''}</span>${p.meet?`<a class="lk" href="${esc(p.meet)}" target="_blank" rel="noopener">${esc(p.meet.replace(/^https?:\/\//,''))}</a>`:'<span class="lk muted">sem link</span>'}</div>`;}).join(''):'<p class="muted small" style="padding:6px 2px">Sem atendimentos</p>'}</div></div>`;
 }
 function vHoje(){
   const today=todayISO(), mon=addDays(mondayOf(today),7*UI.semHoje);
@@ -496,11 +504,11 @@ function vMes(){
   const prev=previstas(first,last), prevDia={}; prev.forEach(x=>{(prevDia[x.data]||(prevDia[x.data]=[])).push(x);});
   const dia=UI.dia&&UI.dia.startsWith(UI.mes)?UI.dia:null;
   return `<div class="bar"><button class="sm" onclick="navMes(-1)" aria-label="Mês anterior">‹</button><button class="sm" onclick="navMes(1)" aria-label="Próximo mês">›</button><h2>${MESES[m-1]} ${y}</h2></div>
-    <p class="small muted" style="margin:-6px 0 8px"><span class="mini st-agendada">agendada</span> <span class="mini fixo">horário fixo</span> <span class="mini st-realizada">realizada</span> <span class="mini blk">⛔ bloqueio</span></p>
+    <p class="small muted" style="margin:-6px 0 8px"><span class="mini st-agendada">agendada</span> <span class="mini fixo">horário fixo</span> <span class="mini q">quinzenal</span> <span class="mini st-realizada">realizada</span> <span class="mini blk">⛔ bloqueio</span></p>
     <div class="cal"><div class="cal-head"><div>Seg</div><div>Ter</div><div>Qua</div><div>Qui</div><div>Sex</div><div>Sáb</div><div>Dom</div></div><div class="cal-grid">${cells.map(d=>{
       const ss=sessoesDoDia(d).filter(s=>s.status!=='cancelada'&&s.status!=='remarcada'), pv=prevDia[d]||[], tot=ss.length+pv.length;
       return `<div class="cell ${d.startsWith(UI.mes)?'':'out'} ${d===today?'today':''} ${d===dia?'sel':''}" onclick="UI.dia='${d}';render();document.getElementById('daypanel')?.scrollIntoView({behavior:'smooth',block:'nearest'})"><span class="d">${+d.slice(8)}</span>
-        ${[...ss.map(s=>({h:s.blk&&s.diaInteiro?'00:00':s.hora,s})),...pv.map(x=>({h:x.hora,x}))].sort((a,b)=>a.h.localeCompare(b.h)).map(it=>it.x?`<span class="mini fixo">${esc(it.x.hora)} ${esc(nomeP(it.x.pacienteId).split(' ')[0])}</span>`:it.s.blk?`<span class="mini blk">⛔ ${esc(it.s.diaInteiro?(it.s.titulo||'bloqueado'):it.s.hora+' '+(it.s.titulo||''))}</span>`:`<span class="mini st-${stEfV(it.s)}">${esc(it.s.hora)} ${esc(nomeP(it.s.pacienteId).split(' ')[0])}</span>`).join('')}
+        ${[...ss.map(s=>({h:s.blk&&s.diaInteiro?'00:00':s.hora,s})),...pv.map(x=>({h:x.hora,x}))].sort((a,b)=>a.h.localeCompare(b.h)).map(it=>it.x?`<span class="mini fixo${qc(P[it.x.pacienteId])}">${esc(it.x.hora)} ${esc(nomeP(it.x.pacienteId).split(' ')[0])}${qt(P[it.x.pacienteId])}</span>`:it.s.blk?`<span class="mini blk">⛔ ${esc(it.s.diaInteiro?(it.s.titulo||'bloqueado'):it.s.hora+' '+(it.s.titulo||''))}</span>`:`<span class="mini st-${stEfV(it.s)}${qc(P[it.s.pacienteId])}">${esc(it.s.hora)} ${esc(nomeP(it.s.pacienteId).split(' ')[0])}${qt(P[it.s.pacienteId])}</span>`).join('')}
         ${tot?`<span class="cnt">${tot}</span>`:''}</div>`;}).join('')}</div></div>
     ${dia?`<div class="daypanel" id="daypanel">${cardDia(dia,true)}</div>`:''}`;
 }
