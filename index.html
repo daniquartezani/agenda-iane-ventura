@@ -434,7 +434,7 @@ function previstas(ini,fim){
   D.sessoes.forEach(x=>{ if(!x.blk) ocupadas.add(x.pacienteId+'|'+mondayOf(x.data)); });
   const bloq=new Set(D.sessoes.filter(x=>x.blk&&x.diaInteiro).map(x=>x.data));
   for(const p of D.pacientes.filter(p=>p.ativo!==false&&p.diaSemana!=null&&p.hora)){
-    let ref=p.referencia||p.ultima||null;
+    let ref=(p.ultima&&p.referencia)?(p.referencia>p.ultima?p.referencia:p.ultima):(p.ultima||p.referencia||null);
     for(let d=ini;d<=fim;d=addDays(d,1)){
       if(d<today||weekdayOf(d)!==+p.diaSemana||bloq.has(d))continue;
       if(p.frequencia==='quinzenal'){ if(!ref)ref=d; const w=Math.round((fromISO(mondayOf(d))-fromISO(mondayOf(ref)))/(7*864e5)); if(w%2!==0)continue; }
