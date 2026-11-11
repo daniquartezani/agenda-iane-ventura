@@ -82,6 +82,12 @@ main{max-width:1180px;margin:0 auto;padding:18px 16px 64px}
 .pill.info{background:var(--info-soft);color:var(--info)}
 .pill.neut{background:var(--neut-soft);color:var(--neut)}
 .pill.acc{background:var(--acc-soft);color:var(--acc)}
+.pill.pz{background:var(--neut-soft);color:var(--neut);border:1px dashed var(--neut)}
+table.fixa .fx.pz{opacity:.62;border-left-style:dashed}
+.fixa-m .fm-row.pz b{opacity:.6}
+.pzlist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.pzlist li{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:7px 10px;border:1px dashed var(--line);border-radius:8px}
+.pzlist li.old{opacity:.55}
 .num{font-family:var(--disp);font-weight:600;font-size:12px;color:var(--acc);background:var(--acc-soft);padding:1px 6px;border-radius:6px}
 
 /* status colours */
@@ -429,15 +435,20 @@ const stEfV=s=>{ if(!s||s.status!=='agendada'||s.blk) return s?s.status:''; cons
 const fimV=(hora,dur)=>{ const [a,b]=(hora||'00:00').split(':').map(Number); const t=a*60+b+(+dur||90); return pad(Math.floor(t/60)%24)+':'+pad(t%60); };
 const durV=m=>{ m=+m||90; const h=Math.floor(m/60), r=m%60; return (h?h+'h':'')+(r?pad(r):'')+(h?'':'min'); };
 const sessoesDoDia=iso=>D.sessoes.filter(s=>s.data===iso).sort(cmpS);
+const pausaEm=(p,d)=>((p&&p.pausas)||[]).find(x=>x.de<=d&&(!x.ate||d<=x.ate))||null;
+const pausaProx=p=>{const t=todayISO();return ((p&&p.pausas)||[]).filter(x=>!x.ate||x.ate>=t).sort((a,b)=>a.de.localeCompare(b.de))[0]||null;};
+const pausaTxt=x=>x.de<=todayISO()?(x.ate?`em pausa até ${fmtD(x.ate)}`:'em pausa'):`pausa de ${fmtD(x.de)}${x.ate?' até '+fmtD(x.ate):''}`;
 function previstas(ini,fim){
   const today=todayISO(), out=[], ocupadas=new Set();
   D.sessoes.forEach(x=>{ if(!x.blk) ocupadas.add(x.pacienteId+'|'+mondayOf(x.data)); });
   const bloq=new Set(D.sessoes.filter(x=>x.blk&&x.diaInteiro).map(x=>x.data));
   for(const p of D.pacientes.filter(p=>p.ativo!==false&&p.diaSemana!=null&&p.hora)){
     let ref=(p.ultima&&p.referencia)?(p.referencia>p.ultima?p.referencia:p.ultima):(p.ultima||p.referencia||null);
+    const fimPz=(p.pausas||[]).filter(x=>x.ate).map(x=>x.ate).sort();
     for(let d=ini;d<=fim;d=addDays(d,1)){
-      if(d<today||weekdayOf(d)!==+p.diaSemana||bloq.has(d))continue;
-      if(p.frequencia==='quinzenal'){ if(!ref)ref=d; const w=Math.round((fromISO(mondayOf(d))-fromISO(mondayOf(ref)))/(7*864e5)); if(w%2!==0)continue; }
+      if(d<today||weekdayOf(d)!==+p.diaSemana||bloq.has(d)||pausaEm(p,d))continue;
+      if(p.frequencia==='quinzenal'){ if(!ref)ref=d;
+        const fp=fimPz.filter(a=>a<d&&a>=ref).pop(); if(fp){ let r=addDays(fp,1); while(weekdayOf(r)!==+p.diaSemana) r=addDays(r,1); ref=r; } const w=Math.round((fromISO(mondayOf(d))-fromISO(mondayOf(ref)))/(7*864e5)); if(w%2!==0)continue; }
       const k=p.id+'|'+mondayOf(d); if(ocupadas.has(k))continue; ocupadas.add(k);
       out.push({pacienteId:p.id,data:d,hora:p.hora});
     }
@@ -518,8 +529,8 @@ function vFixa(){
   const dias=[1,2,3,4,5]; if(fixos.some(p=>+p.diaSemana===6))dias.push(6); if(fixos.some(p=>+p.diaSemana===0))dias.push(0);
   const horas=HORAS_GRADE.slice(); fixos.forEach(p=>{if(!horas.includes(p.hora))horas.push(p.hora);}); horas.sort();
   return `<div class="bar"><div><h2>Agenda fixa</h2><p class="muted">Horários recorrentes. Vazio = horário livre.</p></div></div>
-    <div class="tw fixa-d"><table class="fixa"><thead><tr><th>Hora</th>${dias.map(d=>`<th>${DIAS_L[d].replace('-feira','')}</th>`).join('')}</tr></thead><tbody>${horas.map(h=>`<tr><th>${h}</th>${dias.map(d=>{const ps=fixos.filter(p=>+p.diaSemana===d&&p.hora===h);return `<td class="${ps.length?'busy':'free'}">${ps.map(p=>`<span class="fx ${p.frequencia==='quinzenal'?'q':''}"><b>${esc(p.nome)}</b>${p.frequencia==='quinzenal'?'<span>quinzenal</span>':''}</span>`).join('')||'<span class="livre">livre</span>'}</td>`;}).join('')}</tr>`).join('')}</tbody></table></div>
-    <div class="fixa-m">${dias.map(d=>{const ps=fixos.filter(p=>+p.diaSemana===d).sort((x,y)=>x.hora.localeCompare(y.hora));return `<div class="fm-day"><h4>${DIAS_L[d]}<span>${ps.length} fixo${ps.length===1?'':'s'}</span></h4>${ps.map(p=>`<div class="fm-row"><span class="h">${esc(p.hora)}</span><span class="n"><b>${esc(p.nome)}</b>${p.frequencia==='quinzenal'?'<span class="pill warn">quinzenal</span>':''}</span></div>`).join('')||'<p class="muted small" style="padding:10px 12px">Nenhum horário fixo</p>'}</div>`;}).join('')}</div>
+    <div class="tw fixa-d"><table class="fixa"><thead><tr><th>Hora</th>${dias.map(d=>`<th>${DIAS_L[d].replace('-feira','')}</th>`).join('')}</tr></thead><tbody>${horas.map(h=>`<tr><th>${h}</th>${dias.map(d=>{const ps=fixos.filter(p=>+p.diaSemana===d&&p.hora===h);return `<td class="${ps.length?'busy':'free'}">${ps.map(p=>{const pz=pausaProx(p);return `<span class="fx ${p.frequencia==='quinzenal'?'q':''}${pz&&pz.de<=todayISO()?' pz':''}"><b>${esc(p.nome)}</b>${p.frequencia==='quinzenal'?'<span>quinzenal</span>':''}${pz?`<span>${p.frequencia==='quinzenal'?' · ':''}${pausaTxt(pz)}</span>`:''}</span>`;}).join('')||'<span class="livre">livre</span>'}</td>`;}).join('')}</tr>`).join('')}</tbody></table></div>
+    <div class="fixa-m">${dias.map(d=>{const ps=fixos.filter(p=>+p.diaSemana===d).sort((x,y)=>x.hora.localeCompare(y.hora));return `<div class="fm-day"><h4>${DIAS_L[d]}<span>${ps.length} fixo${ps.length===1?'':'s'}</span></h4>${ps.map(p=>{const pz=pausaProx(p);return `<div class="fm-row${pz&&pz.de<=todayISO()?' pz':''}"><span class="h">${esc(p.hora)}</span><span class="n"><b>${esc(p.nome)}</b>${p.frequencia==='quinzenal'?'<span class="pill warn">quinzenal</span>':''}${pz?`<span class="pill pz">${pausaTxt(pz)}</span>`:''}</span></div>`;}).join('')||'<p class="muted small" style="padding:10px 12px">Nenhum horário fixo</p>'}</div>`;}).join('')}</div>
     ${soltos.length?`<div class="section" style="margin-top:20px"><h3>Sem dia fixo</h3><p>${soltos.map(p=>esc(p.nome)).join(' · ')}</p></div>`:''}`;
 }
 function render(){
