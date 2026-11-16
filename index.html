@@ -82,6 +82,19 @@ main{max-width:1180px;margin:0 auto;padding:18px 16px 64px}
 .pill.info{background:var(--info-soft);color:var(--info)}
 .pill.neut{background:var(--neut-soft);color:var(--neut)}
 .pill.acc{background:var(--acc-soft);color:var(--acc)}
+.urg{background:var(--surf);border:1px solid var(--line);border-left:4px solid var(--bad);border-radius:var(--r);padding:12px 14px;margin-bottom:16px}
+.urg.vazio{border-left-color:var(--line)}
+.urg header{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.urg header h3{flex:1;display:flex;align-items:center;gap:8px;font-size:15px;margin:0}
+.urg header h3 .n{font-size:12px;background:var(--bad);color:#fff;border-radius:99px;padding:0 7px;line-height:18px}
+.urg ul{list-style:none;margin:0;padding:0}
+.urg li{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:14px;padding:7px 0;border-top:1px solid var(--line)}
+.urg li:first-child{border-top:0}
+.urg li input{width:20px;height:20px;flex:none;padding:0;accent-color:var(--ok)}
+.urg li .t{flex:1;min-width:170px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;text-align:left;background:none;border:0;padding:2px 0;color:inherit;font:inherit;border-radius:0}
+.urg li .t:hover{background:none;text-decoration:underline}
+.urg li.done .t{text-decoration:line-through;opacity:.55}
+.urg ul.feitos{margin-top:4px;border-top:1px dashed var(--line)}
 .pill.pz{background:var(--neut-soft);color:var(--neut);border:1px dashed var(--neut)}
 table.fixa .fx.pz{opacity:.62;border-left-style:dashed}
 .fixa-m .fm-row.pz b{opacity:.6}
